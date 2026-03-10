@@ -30,12 +30,12 @@
             
             <form id="bookingForm" class="booking-form">
                 
-                <div class="form-group">
+                <div class="form-group" style="position: relative; z-index: 20;">
                     <label for="bookingDate">Date (Next Day Booking Only)</label>
-                    <input type="date" id="bookingDate" required style="width: 100%; padding: 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 15px; background: #f9fafb;" >
+                    <input type="date" id="bookingDate" required>
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group" style="position: relative; z-index: 15;">
                     <label for="mealSelect">Select Time</label>
                     <select id="mealSelect" required>
                         <option value="" disabled selected>Choose a meal</option>
@@ -45,7 +45,7 @@
                     </select>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="position: relative; z-index: 25;">
                     <label>Select Mess</label>
                     <div class="custom-dropdown" id="messDropdown">
                         <div class="dropdown-selected" id="messSelected">Choose a location</div>
@@ -68,6 +68,12 @@
                 </div>
                 <div id="bookingMsg" class="message"></div>
             </form>
+        </section>
+        <section class="menu-section" style="margin-top: 30px;">
+            <h2>Pending Feedback</h2>
+            <div id="feedbackContainer">
+                <p>Loading your pending feedback...</p>
+            </div>
         </section>
     </main>
 

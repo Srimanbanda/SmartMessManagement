@@ -22,47 +22,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const hoverCardA = document.getElementById('hoverCardA');
     const hoverCardB = document.getElementById('hoverCardB');
 
-    let dailyMenus = []; // Store fetched menus here
+    let dailyMenus = []; 
 
-    // 2. Future Booking Logic (Unlock the calendar)
+    // 2. Future Booking Logic (Midnight Cutoff)
+    // By setting the minimum date to 'tomorrow', the UI naturally handles the 12 AM cutoff.
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
     
     bookingDateInput.value = tomorrowStr;
-    bookingDateInput.min = tomorrowStr;
-    // Notice: We removed bookingDateInput.max so students can book indefinitely into the future
+    bookingDateInput.min = tomorrowStr; 
 
-    // 3. Dynamic 12 PM Breakfast Cutoff Logic
-    function checkBreakfastCutoff() {
-        const selectedDate = bookingDateInput.value;
-        const now = new Date();
-        const currentHour = now.getHours(); 
-        
-        const breakfastOption = mealSelect.querySelector('option[value="breakfast"]');
-        
-        if (breakfastOption) {
-            // If they picked EXACTLY tomorrow AND it is currently 12 PM (Noon) or later
-            if (selectedDate === tomorrowStr && currentHour >= 12) {
-                breakfastOption.disabled = true;
-                breakfastOption.innerText = "Breakfast (Closed at 12 PM)";
-                
-                // If they previously had breakfast selected, clear it so they can't force a submission
-                if (mealSelect.value === 'breakfast') {
-                    mealSelect.value = '';
-                }
-            } else {
-                // If they pick day-after-tomorrow, or it's before 12 PM, keep it open!
-                breakfastOption.disabled = false;
-                breakfastOption.innerText = "Breakfast";
-            }
-        }
-    }
-
-    // Run the cutoff check immediately on page load
-    checkBreakfastCutoff();
-
-    // 4. Fetch Initial Dashboard Data
+    // 3. Fetch Initial Dashboard Data
     try {
         const response = await fetch(`http://localhost:3000/api/student/dashboard/${studentId}`);
         const data = await response.json();
@@ -70,31 +41,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             welcomeMessage.innerText = `Welcome, ${data.student.name.split(' ')[0]}`;
             coinBalance.innerText = data.student.coins;
         }
-        // Fetch menus for tomorrow silently in the background
         await fetchMenusForDate(tomorrowStr);
     } catch (error) {
         console.error('Data load error:', error);
     }
 
-    // 5. Fetch Menus Function
+    // 4. Fetch Menus Function
     async function fetchMenusForDate(dateStr) {
         try {
             const response = await fetch(`http://localhost:3000/api/student/menus/${dateStr}`);
             const data = await response.json();
             if (data.success) {
                 dailyMenus = data.menus;
-                updateHoverCards(); // Update cards if a meal is already selected
+                updateHoverCards(); 
             }
         } catch (error) {
             console.error('Menu fetch error:', error);
         }
     }
 
-    // Re-run the cutoff check and fetch menus every time the user changes the calendar date
+    // Fetch menus when the user changes the calendar date
     bookingDateInput.addEventListener('change', (e) => {
-        checkBreakfastCutoff();
         fetchMenusForDate(e.target.value); 
     });
+
+    // ... (Keep the rest of the file exactly the same: updateHoverCards, custom dropdown, logout, booking form, etc.) ...
 
     // 6. Update Hover Cards based on Selected Meal Time
     function updateHoverCards() {
@@ -175,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     student_id: studentId,
-                    messName: messName,    // Ensure this matches backend expectation
+                    mess_name: messName,    // Fixed property name to match backend
                     meal_type: mealType,
                     meal_date: selectedDate
                 })
@@ -201,4 +172,72 @@ document.addEventListener('DOMContentLoaded', async () => {
             bookBtn.disabled = false;
         }
     });
+
+    // 10. Fetch & Render Pending Feedback
+    async function loadPendingFeedback() {
+        const feedbackContainer = document.getElementById('feedbackContainer');
+        if (!feedbackContainer) return; // Safety check
+
+        try {
+            const response = await fetch(`http://localhost:3000/api/student/feedback/pending/${studentId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                if (data.pending.length > 0) {
+                    feedbackContainer.innerHTML = data.pending.map(item => `
+                        <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${item.mess_name.replace('_', ' ')} - <span style="text-transform: capitalize;">${item.meal_type}</span></strong><br>
+                                <span style="font-size: 13px; color: #6b7280;">Date: ${item.meal_date.split('T')[0]}</span>
+                            </div>
+                            <div>
+                                <select id="rating-${item.booking_id}" style="padding: 5px; border-radius: 4px;">
+                                    <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
+                                    <option value="4">⭐⭐⭐⭐ (Good)</option>
+                                    <option value="3">⭐⭐⭐ (Average)</option>
+                                    <option value="2">⭐⭐ (Poor)</option>
+                                    <option value="1">⭐ (Terrible)</option>
+                                </select>
+                                <button onclick="submitFeedback('${item.mess_name}', '${item.meal_date.split('T')[0]}', '${item.meal_type}', ${item.booking_id})" style="padding: 5px 10px; background: #10b981; margin-left: 10px; border: none; color: white; border-radius: 4px; cursor: pointer;">Submit</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    // Success, but no pending meals!
+                    feedbackContainer.innerHTML = '<p>You have no pending meals to rate. Enjoy your food!</p>';
+                }
+            } else {
+                // The backend returned an error (e.g., SQL column missing)
+                feedbackContainer.innerHTML = `<p style="color:red;">Backend Error: ${data.message}</p>`;
+            }
+        } catch (error) {
+            // The server is offline or unreachable
+            feedbackContainer.innerHTML = '<p style="color:red;">Network Error: Failed to connect to server.</p>';
+            console.error("Fetch error:", error);
+        }
+    }
+
+    // Attach function to global window object so inline HTML onclick can access it
+    window.submitFeedback = async (mess_name, meal_date, meal_type, booking_id) => {
+        const rating = document.getElementById(`rating-${booking_id}`).value;
+        try {
+            const res = await fetch('http://localhost:3000/api/student/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ student_id: studentId, mess_name, meal_date, meal_type, rating: parseInt(rating) })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Thank you for your feedback!');
+                loadPendingFeedback(); // Reload the list
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            alert('Error submitting feedback.');
+        }
+    };
+
+    // MAKE SURE THIS LINE IS HERE TO ACTUALLY RUN THE FUNCTION ON PAGE LOAD
+    loadPendingFeedback();
 });
