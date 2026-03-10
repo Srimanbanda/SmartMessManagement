@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mess Admin Dashboard</title>
+    <link rel="stylesheet" href="admin.css">
+    <script>
+        // Security: Only allow Mess_Admin
+        if (localStorage.getItem('admin_role') !== 'Mess_Admin') {
+            window.location.href = 'login.html';
+        }
+    </script>
+</head>
+<body>
+    <nav class="navbar" style="display: flex; justify-content: space-between; align-items: center; background: #0f172a;">
+        <div class="nav-brand">👨‍🍳 Mess Operations</div>
+        <button onclick="localStorage.clear(); window.location.href='login.html';" style="background: transparent; border: 1px solid white; padding: 8px 15px; border-radius: 4px; color: white; cursor: pointer;">Logout</button>
+    </nav>
+
+    <main class="admin-container">
+        <div class="admin-card">
+            <h2>Publish Daily Menu</h2>
+            <form id="menuForm">
+                <select id="menuMess" required>
+                    <option value="" disabled selected>Select Mess</option>
+                    <option value="Mess_A">Mess A</option>
+                    <option value="Mess_B">Mess B</option>
+                </select>
+                <select id="menuMeal" required>
+                    <option value="" disabled selected>Select Meal</option>
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="snacks">Snacks</option> <option value="dinner">Dinner</option>
+                </select>
+                <input type="date" id="menuDate" required>
+                <div class="time-group">
+                    <input type="time" id="menuStart" required title="Start Time">
+                    <input type="time" id="menuEnd" required title="End Time">
+                </div>
+                <input type="number" id="menuCap" placeholder="Capacity (e.g., 150)" required>
+                <textarea id="menuItems" placeholder="Menu Items (e.g., Samosa, Tea)" rows="3" required></textarea>
+                <button type="submit" class="btn-purple">Publish Menu</button>
+                <div id="menuMsg" class="message"></div>
+            </form>
+        </div>
+
+        <div class="admin-card">
+            <h2>View Daily Bookings</h2>
+            <form id="viewBookingsForm" style="flex-direction: row; align-items: center; margin-bottom: 20px;">
+                <input type="date" id="viewDate" required>
+                <select id="viewMess" required>
+                    <option value="Mess_A">Mess A</option>
+                    <option value="Mess_B">Mess B</option>
+                </select>
+                <button type="submit" class="btn-green">Fetch</button>
+            </form>
+            <div id="bookingsTableContainer" style="overflow-x: auto;"></div>
+        </div>
+    </main>
+    <script src="admin.js"></script>
+    <script>
+        const viewForm = document.getElementById('viewBookingsForm');
+        if (viewForm) {
+            viewForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const date = document.getElementById('viewDate').value;
+                const mess = document.getElementById('viewMess').value;
+                const container = document.getElementById('bookingsTableContainer');
+                
+                container.innerHTML = 'Loading...';
+                const response = await fetch(`http://localhost:3000/api/admin/bookings?date=${date}&mess_name=${mess}`);
+                const data = await response.json();
+                
+                if (data.success && data.bookings.length > 0) {
+                    let html = '<table style="width:100%; text-align:left; border-collapse: collapse;"><tr><th style="border-bottom:1px solid #ccc; padding:8px;">Roll No</th><th style="border-bottom:1px solid #ccc; padding:8px;">Name</th><th style="border-bottom:1px solid #ccc; padding:8px;">Meal</th><th style="border-bottom:1px solid #ccc; padding:8px;">Status</th></tr>';
+                    data.bookings.forEach(b => {
+                        html += `<tr><td style="padding:8px; border-bottom:1px solid #eee;">${b.roll_no}</td><td style="padding:8px; border-bottom:1px solid #eee;">${b.name}</td><td style="padding:8px; border-bottom:1px solid #eee; text-transform:capitalize;">${b.meal_type}</td><td style="padding:8px; border-bottom:1px solid #eee;">${b.status}</td></tr>`;
+                    });
+                    html += '</table>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p>No bookings found.</p>';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

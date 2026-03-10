@@ -1,0 +1,181 @@
+:root {
+    --primary: #4F46E5;
+    --primary-hover: #4338CA;
+    --bg-color: #f3f4f6;
+    --card-bg: #ffffff;
+    --text-main: #1F2937;
+    --text-muted: #6B7280;
+    --wallet-bg: #10B981; /* Green for money */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+
+body { background-color: var(--bg-color); color: var(--text-main); }
+
+/* Navigation */
+.navbar {
+    background-color: var(--card-bg);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.nav-brand { font-size: 20px; font-weight: bold; color: var(--primary); }
+.logout-btn { 
+    background: transparent; border: 1px solid #D1D5DB; padding: 8px 15px;
+    border-radius: 6px; cursor: pointer; color: var(--text-main);
+}
+.logout-btn:hover { background: #f9fafb; }
+
+/* Main Layout */
+.dashboard-container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+
+/* Header & Wallet */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+.dashboard-header h1 { font-size: 28px; margin-bottom: 5px; }
+.dashboard-header p { color: var(--text-muted); }
+
+.wallet-card {
+    background: var(--wallet-bg);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);
+    text-align: right;
+    min-width: 200px;
+}
+.wallet-label { display: block; font-size: 14px; opacity: 0.9; margin-bottom: 5px; }
+.wallet-amount { display: block; font-size: 24px; font-weight: bold; }
+
+/* Sections */
+h2 { font-size: 20px; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+.menu-section, .booking-section {
+    background: var(--card-bg);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 30px;
+}
+
+/* Menu Grid */
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+.menu-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 15px;
+    background: #fafafa;
+}
+.menu-card h3 { color: var(--primary); margin-bottom: 10px; }
+.menu-card .time { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; display: block; }
+.menu-card .items { font-size: 15px; line-height: 1.5; }
+
+/* Booking Form */
+.booking-form { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: end; }
+.form-group label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; }
+.form-group select { 
+    width: 100%; padding: 12px; border: 1px solid #D1D5DB; 
+    border-radius: 6px; font-size: 15px; outline: none; background: white;
+}
+#bookBtn {
+    background: var(--primary); color: white; border: none; padding: 12px;
+    border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s;
+}
+#bookBtn:hover { background: var(--primary-hover); }
+.message { grid-column: 1 / -1; font-size: 14px; text-align: center; margin-top: 10px; display: none; }
+.message.success { color: #10B981; }
+.message.error { color: #EF4444; }
+
+@media (max-width: 600px) {
+    .booking-form { grid-template-columns: 1fr; }
+}
+/* Custom Dropdown Styles */
+.custom-dropdown {
+    position: relative;
+    width: 100%;
+    cursor: pointer;
+}
+
+.dropdown-selected {
+    padding: 12px;
+    border: 1px solid #D1D5DB;
+    border-radius: 6px;
+    background: white;
+    font-size: 15px;
+}
+
+.dropdown-options {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: white;
+    border: 1px solid #D1D5DB;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 100;
+    margin-top: 5px;
+}
+
+.dropdown-option {
+    padding: 12px;
+    border-bottom: 1px solid #f3f4f6;
+    position: relative;
+    transition: background 0.2s;
+}
+
+.dropdown-option:hover {
+    background: #f9fafb;
+    color: var(--primary);
+    font-weight: bold;
+}
+
+.dropdown-option:last-child {
+    border-bottom: none;
+}
+
+/* The Hover Card */
+.hover-card {
+    display: none;
+    position: absolute;
+    left: 105%; /* Pops out to the right */
+    top: 0;
+    width: 250px;
+    background: #1e293b;
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px rgba(0,0,0,0.2);
+    font-size: 13px;
+    font-weight: normal;
+    z-index: 200;
+    pointer-events: none; /* Prevents cursor from flickering */
+}
+
+/* Trigger the hover card when hovering over the option */
+.dropdown-option:hover .hover-card {
+    display: block;
+}
+
+/* Triangle pointer for the hover card */
+.hover-card::before {
+    content: "";
+    position: absolute;
+    top: 15px;
+    right: 100%;
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent #1e293b transparent transparent;
+}

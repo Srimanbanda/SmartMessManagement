@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Mess | Dashboard</title>
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand">Smart Mess System</div>
+        <button id="logoutBtn" class="logout-btn">Logout</button>
+    </nav>
+
+    <main class="dashboard-container">
+        <header class="dashboard-header">
+            <div>
+                <h1 id="welcomeMessage">Loading...</h1>
+                <p>Manage your wallet and book your meals.</p>
+            </div>
+            <div class="wallet-card">
+                <span class="wallet-label">Current Balance</span>
+                <span class="wallet-amount"><span id="coinBalance">--</span> Coins</span>
+            </div>
+        </header>
+
+      <section class="booking-section">
+            <h2>Plan Your Meals</h2>
+            
+            <form id="bookingForm" class="booking-form">
+                
+                <div class="form-group">
+                    <label for="bookingDate">Date (Next Day Booking Only)</label>
+                    <input type="date" id="bookingDate" required style="width: 100%; padding: 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 15px; background: #f9fafb;" >
+                </div>
+                
+                <div class="form-group">
+                    <label for="mealSelect">Select Time</label>
+                    <select id="mealSelect" required>
+                        <option value="" disabled selected>Choose a meal</option>
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="snacks">Snacks</option> <option value="dinner">Dinner</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Mess</label>
+                    <div class="custom-dropdown" id="messDropdown">
+                        <div class="dropdown-selected" id="messSelected">Choose a location</div>
+                        <div class="dropdown-options" id="messOptions">
+                            <div class="dropdown-option" data-value="Mess_A">
+                                Mess A
+                                <div class="hover-card" id="hoverCardA">Select a meal time first...</div>
+                            </div>
+                            <div class="dropdown-option" data-value="Mess_B">
+                                Mess B
+                                <div class="hover-card" id="hoverCardB">Select a meal time first...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="messSelect" required>
+                </div>
+                
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button type="submit" id="bookBtn" style="width: 100%;">Pay 50 Coins & Book</button>
+                </div>
+                <div id="bookingMsg" class="message"></div>
+            </form>
+        </section>
+    </main>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

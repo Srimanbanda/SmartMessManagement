@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>College Admin Dashboard</title>
+    <link rel="stylesheet" href="admin.css">
+    <script>
+        // Security: Only allow College_Admin
+        if (localStorage.getItem('admin_role') !== 'College_Admin') {
+            window.location.href = 'login.html';
+        }
+    </script>
+</head>
+<body>
+    <nav class="navbar" style="display: flex; justify-content: space-between; align-items: center; background: #1e3a8a;">
+        <div class="nav-brand">🏛️ College Administration</div>
+        <button onclick="localStorage.clear(); window.location.href='login.html';" style="background: transparent; border: 1px solid white; padding: 8px 15px; border-radius: 4px; color: white; cursor: pointer;">Logout</button>
+    </nav>
+
+    <main class="admin-container">
+        <div class="admin-card">
+            <h2>Register New Student</h2>
+            <form id="registerForm">
+                <input type="text" id="regName" placeholder="Full Name" required>
+                <input type="text" id="regRoll" placeholder="Roll Number" required>
+                <input type="password" id="regPass" placeholder="Temporary Password" required>
+                <input type="text" id="regRfid" placeholder="RFID UID (e.g., A1B2C3D4)" required>
+                <button type="submit">Register Student</button>
+                <div id="regMsg" class="message"></div>
+            </form>
+        </div>
+
+        <div class="admin-card">
+            <h2>Recharge Student Wallet</h2>
+            <form id="rechargeForm">
+                <input type="number" id="rechStudentId" placeholder="Student DB ID" required>
+                <input type="number" id="rechAmount" placeholder="Coin Amount" required>
+                <button type="submit" class="btn-green">Add Coins</button>
+                <div id="rechMsg" class="message"></div>
+            </form>
+        </div>
+    </main>
+    <script src="admin.js"></script>
+</body>
+</html>

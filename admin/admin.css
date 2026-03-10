@@ -1,0 +1,43 @@
+:root {
+    --bg-color: #f8fafc;
+    --card-bg: #ffffff;
+    --text-main: #1e293b;
+    --border: #e2e8f0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+body { background-color: var(--bg-color); color: var(--text-main); }
+
+.navbar { background: #0f172a; color: white; padding: 15px 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.nav-brand { font-size: 20px; font-weight: bold; }
+
+.admin-container { 
+    max-width: 1200px; margin: 40px auto; padding: 0 20px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; 
+}
+
+.admin-card {
+    background: var(--card-bg); padding: 25px; border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border);
+}
+
+.admin-card h2 { font-size: 18px; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
+form { display: flex; flex-direction: column; gap: 12px; }
+input, select, textarea {
+    width: 100%; padding: 10px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 14px; outline: none;
+}
+.time-group { display: flex; gap: 10px; }
+
+button {
+    padding: 12px; background: #3b82f6; color: white; border: none;
+    border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;
+}
+button:hover { opacity: 0.9; }
+.btn-green { background: #10b981; }
+.btn-purple { background: #8b5cf6; }
+
+.message { font-size: 13px; text-align: center; margin-top: 5px; display: none; }
+.message.success { color: #10b981; }
+.message.error { color: #ef4444; }
