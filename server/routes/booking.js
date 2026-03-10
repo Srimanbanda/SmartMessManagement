@@ -13,36 +13,26 @@ router.post('/create', async (req, res) => {
 
     try {
         await connection.beginTransaction();
-        // --- NEW: Time Cutoff Logic ---
-        // --- UPDATED: Dynamic Time Cutoff Logic ---
-        const now = new Date();
-        const currentHour = now.getHours();
+
+        // --- NEW: Strict Next-Day Security ---
+        // Get today's date in YYYY-MM-DD based on local server time
+        const todayStr = new Date().toISOString().split('T')[0];
         
-        // Calculate tomorrow's exact date string (YYYY-MM-DD)
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = tomorrow.toISOString().split('T')[0];
-        
-        // Only block if they are trying to book TOMORROW'S breakfast after 12 PM
-        if (meal_type === 'breakfast' && meal_date === tomorrowStr) {
-            if (currentHour >= 12) {
-                throw new Error("Breakfast bookings for tomorrow closed at 12:00 PM today.");
-            }
+        if (meal_date <= todayStr) {
+            throw new Error("Cutoff passed. You can only book meals for tomorrow or later.");
         }
-        // Note: If they book for day-after-tomorrow, this block is ignored and booking succeeds.
-        // ------------------------------------------
-        // ------------------------------
+        // -------------------------------------
 
         // 1. Check if the student already booked ANY mess for this specific meal and date
         const [existingBooking] = await connection.query(
-            'SELECT id FROM bookings WHERE student_id = ? AND meal_type = ? AND meal_date = ?',
+            'SELECT id FROM bookings WHERE student_id = ? AND meal_type = ? AND meal_date = ? AND status = "booked"',
             [student_id, meal_type, meal_date]
         );
         if (existingBooking.length > 0) {
-            throw new Error(`You have already booked ${meal_type} for today.`);
+            throw new Error(`You have already booked ${meal_type} for this date.`);
         }
 
-        // 2. Lock the menu row and check capacity (Prevents Race Conditions)
+        // 2. Lock the menu row and check capacity
         const [menuRows] = await connection.query(
             'SELECT capacity FROM menu WHERE mess_name = ? AND meal_type = ? AND meal_date = ? FOR UPDATE',
             [mess_name, meal_type, meal_date]

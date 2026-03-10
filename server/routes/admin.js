@@ -130,5 +130,26 @@ router.get('/bookings', async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+// 6. Get Feedback Analytics
+// GET /api/admin/feedback/stats
+router.get('/feedback/stats', async (req, res) => {
+    try {
+        // Get overall averages per mess
+        const [stats] = await pool.query(`
+            SELECT mess_name, ROUND(AVG(rating), 1) as avg_rating, COUNT(*) as total_reviews 
+            FROM feedback GROUP BY mess_name
+        `);
+        // Get the 5 most recent reviews
+        const [recent] = await pool.query(`
+            SELECT f.rating, f.meal_type, f.meal_date, f.mess_name, f.source, s.name 
+            FROM feedback f
+            JOIN students s ON f.student_id = s.id
+            ORDER BY f.created_at DESC LIMIT 5
+        `);
+        res.status(200).json({ success: true, stats, recent });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
 module.exports = router;

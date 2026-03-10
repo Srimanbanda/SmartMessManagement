@@ -8,7 +8,6 @@ router.post('/login', async (req, res) => {
     const { roll_no, password } = req.body;
 
     try {
-        // In a production app, you would use bcrypt to compare hashed passwords here.
         const [students] = await pool.query(
             'SELECT id, name, roll_no, coins FROM students WHERE roll_no = ? AND password = ?',
             [roll_no, password]
@@ -33,18 +32,15 @@ router.post('/login', async (req, res) => {
 // GET /api/student/dashboard/:id
 router.get('/dashboard/:id', async (req, res) => {
     const studentId = req.params.id;
-    // Get today's date in YYYY-MM-DD format based on local time
     const today = new Date().toISOString().split('T')[0];
-          console.log(today);
+    
     try {
-        // Fetch student balance
         const [students] = await pool.query('SELECT name, coins FROM students WHERE id = ?', [studentId]);
         
         if (students.length === 0) {
             return res.status(404).json({ success: false, message: 'Student not found' });
         }
 
-        // Fetch today's menus for both messes
         const [menus] = await pool.query(
             'SELECT id, mess_name, meal_type, items, start_time, end_time, capacity FROM menu WHERE meal_date = ?',
             [today]
@@ -72,6 +68,45 @@ router.get('/menus/:date', async (req, res) => {
         res.status(200).json({ success: true, menus });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error fetching menus' });
+    }
+});
+
+// 4. Get Pending Feedback (Strictly for CONSUMED meals)
+// GET /api/student/feedback/pending/:id
+router.get('/feedback/pending/:id', async (req, res) => {
+    try {
+        const [pending] = await pool.query(`
+            SELECT b.id as booking_id, b.mess_name, b.meal_type, b.meal_date
+            FROM bookings b
+            LEFT JOIN feedback f ON b.student_id = f.student_id 
+                        AND b.meal_date = f.meal_date 
+                        AND b.meal_type = f.meal_type
+            WHERE b.student_id = ? 
+            AND b.status = 'consumed'  /* The ultimate validation */
+            AND f.id IS NULL
+        `, [req.params.id]);
+        
+        res.status(200).json({ success: true, pending });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 5. Submit Web Feedback
+// POST /api/student/feedback
+router.post('/feedback', async (req, res) => {
+    const { student_id, mess_name, meal_date, meal_type, rating } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO feedback (student_id, mess_name, meal_date, meal_type, rating, source) VALUES (?, ?, ?, ?, ?, "web")',
+            [student_id, mess_name, meal_date, meal_type, rating]
+        );
+        res.status(200).json({ success: true, message: 'Feedback submitted!' });
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ success: false, message: 'You already rated this meal.' });
+        }
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
