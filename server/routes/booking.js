@@ -2,88 +2,99 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 
-const MEAL_COST = 50; // Standardize the cost
-
-// POST /api/booking/create
-router.post('/create', async (req, res) => {
+// POST /api/bookings/book
+router.post('/book', async (req, res) => {
     const { student_id, mess_name, meal_type, meal_date } = req.body;
-    
-    // Grab a dedicated connection for the transaction
+
+    if (!student_id || !mess_name || !meal_type || !meal_date) {
+        return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
     const connection = await pool.getConnection();
 
     try {
         await connection.beginTransaction();
 
-        // --- NEW: Strict Next-Day Security ---
-        // Get today's date in YYYY-MM-DD based on local server time
-        const todayStr = new Date().toISOString().split('T')[0];
+        // 1. Calculate Day of the Week for fallback
+        const dateObj = new Date(meal_date);
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayOfWeek = days[dateObj.getDay()];
+
+        // 2. Determine Dynamic Price
+        let mealPrice = 0;
+        const [specialMenu] = await connection.query(`
+            SELECT price FROM special_menus 
+            WHERE mess_name = ? AND specific_date = ? AND meal_type = ?
+        `, [mess_name, meal_date, meal_type]);
+
+        if (specialMenu.length > 0) {
+            mealPrice = specialMenu[0].price;
+        } else {
+            const [weeklyMenu] = await connection.query(`
+                SELECT price FROM weekly_menus 
+                WHERE mess_name = ? AND day_of_week = ? AND meal_type = ?
+            `, [mess_name, dayOfWeek, meal_type]);
+
+            if (weeklyMenu.length > 0) {
+                mealPrice = weeklyMenu[0].price;
+            } else {
+                throw new Error(`No menu scheduled for ${meal_type} on this date.`);
+            }
+        }
+
+        // 3. Check Wallet Balance
+        const [student] = await connection.query('SELECT coins FROM students WHERE id = ? FOR UPDATE', [student_id]);
         
-        if (meal_date <= todayStr) {
-            throw new Error("Cutoff passed. You can only book meals for tomorrow or later.");
-        }
-        // -------------------------------------
-
-        // 1. Check if the student already booked ANY mess for this specific meal and date
-        const [existingBooking] = await connection.query(
-            'SELECT id FROM bookings WHERE student_id = ? AND meal_type = ? AND meal_date = ? AND status = "booked"',
-            [student_id, meal_type, meal_date]
-        );
-        if (existingBooking.length > 0) {
-            throw new Error(`You have already booked ${meal_type} for this date.`);
+        if (student.length === 0) {
+            throw new Error('Student not found.');
         }
 
-        // 2. Lock the menu row and check capacity
-        const [menuRows] = await connection.query(
-            'SELECT capacity FROM menu WHERE mess_name = ? AND meal_type = ? AND meal_date = ? FOR UPDATE',
-            [mess_name, meal_type, meal_date]
-        );
-        if (menuRows.length === 0) {
-            throw new Error(`No menu published for ${mess_name} - ${meal_type} on this date.`);
+        if (student[0].coins < mealPrice) {
+            throw new Error(`Insufficient funds. Meal costs ${mealPrice} coins, but you only have ${student[0].coins}.`);
         }
 
-        const [bookingCount] = await connection.query(
-            'SELECT COUNT(*) as total FROM bookings WHERE mess_name = ? AND meal_type = ? AND meal_date = ?',
-            [mess_name, meal_type, meal_date]
-        );
-        if (bookingCount[0].total >= menuRows[0].capacity) {
-            throw new Error(`${mess_name} is full for ${meal_type}. Please select the other mess.`);
-        }
+        // 4. Deduct Coins
+        await connection.query(`
+            UPDATE students SET coins = coins - ? WHERE id = ?
+        `, [mealPrice, student_id]);
 
-        // 3. Check student's coin balance
-        const [studentRows] = await connection.query(
-            'SELECT coins FROM students WHERE id = ?', 
-            [student_id]
-        );
-        if (studentRows[0].coins < MEAL_COST) {
-            throw new Error(`Insufficient funds. You need ${MEAL_COST} coins, but have ${studentRows[0].coins}.`);
-        }
+        // 5. Generate unique Booking Reference (e.g., BK-482910)
+        const randomDigits = Math.floor(1000 + Math.random() * 9000); 
+        const timeSuffix = Date.now().toString().slice(-3);
+        const bookingRef = `BK-${randomDigits}${timeSuffix}`;
 
-        // 4. Deduct coins
-        await connection.query(
-            'UPDATE students SET coins = coins - ? WHERE id = ?',
-            [MEAL_COST, student_id]
-        );
+        // 6. Create Booking & Capture ID
+        const [bookingResult] = await connection.query(`
+            INSERT INTO bookings (student_id, booking_ref, mess_name, meal_type, meal_date,  status) 
+            VALUES (?, ?, ?, ?, ?,'booked')
+        `, [student_id, bookingRef, mess_name, meal_type, meal_date, mealPrice]);
+        
+        const bookingId = bookingResult.insertId;
 
-        // 5. Create the booking
-        await connection.query(
-            'INSERT INTO bookings (student_id, meal_type, mess_name, meal_date) VALUES (?, ?, ?, ?)',
-            [student_id, meal_type, mess_name, meal_date]
-        );
+        // 7. Log the Transaction (Linked to the Booking)
+        const description = `${meal_type.charAt(0).toUpperCase() + meal_type.slice(1)} booked for ${meal_date} (Ref: ${bookingRef})`;
+        await connection.query(`
+            INSERT INTO transactions (student_id, booking_id, mess_name, amount, type, description) 
+            VALUES (?, ?, ?, ?, 'debit', ?)
+        `, [student_id, bookingId, mess_name, mealPrice, description]);
 
-        // 6. Log the transaction
-        await connection.query(
-            'INSERT INTO transactions (student_id, type, amount, action_by, remarks) VALUES (?, "debit", ?, "system", ?)',
-            [student_id, MEAL_COST, `Booked ${meal_type} at ${mess_name}`]
-        );
-
-        // If we made it this far, save everything permanently
+        // 8. Commit Transaction
         await connection.commit();
-        res.status(200).json({ success: true, message: `Successfully booked ${meal_type} at ${mess_name}!` });
+        res.status(200).json({ 
+            success: true, 
+            message: `Successfully booked ${meal_type} for ${mealPrice} coins.`,
+            booking_ref: bookingRef, // Send the receipt number to the frontend UI
+            remaining_coins: student[0].coins - mealPrice
+        });
 
     } catch (error) {
-        // If anything fails, revert the entire transaction (no coins lost)
         await connection.rollback();
-        res.status(400).json({ success: false, message: error.message });
+        
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ success: false, message: 'You have already booked this meal.' });
+        }
+        
+        res.status(500).json({ success: false, message: error.message });
     } finally {
         connection.release();
     }

@@ -15,9 +15,9 @@ app.get('/api/health', (req, res) => {
 // Route Placeholders for upcoming phases
  app.use('/api/admin', require('./routes/admin'));
 app.use('/api/student', require('./routes/student'));
-// app.use('/api/rfid', require('./routes/rfid'));
+ app.use('/api/rfid', require('./routes/rfid'));
 app.use('/api/booking', require('./routes/booking'));
-
+app.use('/api/menu',require('./routes/menu'));
 app.use((err, req, res, next) => {
     console.error('Unhandled Error:', err.stack);
     res.status(500).json({ success: false, message: 'Internal Server Error' });

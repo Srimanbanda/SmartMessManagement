@@ -7,8 +7,9 @@ const pool = require('../config/db');
 router.post('/student', async (req, res) => {
     const { name, roll_no, password, rfid_uid } = req.body;
     try {
+        // Updated: Removed the hardcoded '0' coins. Let the DB handle defaults.
         const [result] = await pool.query(
-            'INSERT INTO students (name, roll_no, password, rfid_uid, coins) VALUES (?, ?, ?, ?, 0)',
+            'INSERT INTO students (name, roll_no, password, rfid_uid) VALUES (?, ?, ?, ?)',
             [name, roll_no, password, rfid_uid]
         );
         res.status(201).json({ 
@@ -24,27 +25,10 @@ router.post('/student', async (req, res) => {
     }
 });
 
-// 2. Set the Daily Menu
-// POST /api/admin/menu
-router.post('/menu', async (req, res) => {
-    const { mess_name, meal_type, items, meal_date, start_time, end_time, capacity } = req.body;
-    try {
-        const [result] = await pool.query(
-            'INSERT INTO menu (mess_name, meal_type, items, meal_date, start_time, end_time, capacity) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [mess_name, meal_type, items, meal_date, start_time, end_time, capacity || 100]
-        );
-        res.status(201).json({ 
-            success: true, 
-            message: `${meal_type} menu added for ${mess_name}`,
-            menu_id: result.insertId
-        });
-    } catch (error) {
-        if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ success: false, message: 'Menu already exists for this mess, meal, and date.' });
-        }
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
+// NOTE: The old '/menu' route has been removed.
+// Please use your dedicated 'server/routes/menu.js' file to handle weekly_menus and special_menus.
+
+
 
 // 3. Recharge Student Wallet
 // POST /api/admin/recharge
@@ -62,13 +46,16 @@ router.post('/recharge', async (req, res) => {
             'UPDATE students SET coins = coins + ? WHERE id = ?', 
             [amount, student_id]
         );
+        
 
-        // Step B: Log the transaction
+        // Step B: Log the transaction using your exact new schema structure
         await connection.query(
-            'INSERT INTO transactions (student_id, type, amount, action_by, remarks) VALUES (?, "credit", ?, "admin", "Manual Recharge")', 
+            `INSERT INTO transactions 
+            (student_id, booking_id, mess_name, amount, type, description) 
+            VALUES (?, NULL, "Admin_System", ?, "credit", "Manual Recharge")`, 
             [student_id, amount]
         );
-
+        console.log(2);
         await connection.commit();
         res.status(200).json({ success: true, message: `Successfully added ${amount} coins.` });
         
@@ -79,10 +66,7 @@ router.post('/recharge', async (req, res) => {
         connection.release();
     }
 });
-// 4. Admin Login
-// POST /api/admin/login
-// 4. Admin Login
-// POST /api/admin/login
+
 // 4. Admin Login (With Explicit Role Check)
 // POST /api/admin/login
 router.post('/login', async (req, res) => {
@@ -100,7 +84,7 @@ router.post('/login', async (req, res) => {
 
         const admin = admins[0];
 
-        // NEW: Security check to ensure they selected the correct role from the dropdown
+        // Security check to ensure they selected the correct role from the dropdown
         if (admin.role !== role) {
             return res.status(403).json({ 
                 success: false, 
@@ -113,6 +97,7 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+
 // 5. View Bookings
 // GET /api/admin/bookings?date=YYYY-MM-DD&mess_name=Mess_A
 router.get('/bookings', async (req, res) => {
@@ -130,6 +115,7 @@ router.get('/bookings', async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+
 // 6. Get Feedback Analytics
 // GET /api/admin/feedback/stats
 router.get('/feedback/stats', async (req, res) => {
