@@ -63,6 +63,32 @@ router.get('/dashboard/:id', async (req, res) => {
 // NOTE: The old 'GET /menus/:date' route has been DELETED. 
 // Your frontend must call 'GET /api/menu/:mess_name/:target_date' from your menu.js router instead.
 
+// Get all bookings for a student (full history)
+// GET /api/student/bookings/:id?date=YYYY-MM-DD&mess_name=Mess_A (both optional)
+router.get('/bookings/:id', async (req, res) => {
+    try {
+        const studentId = req.params.id;
+        const { date, mess_name } = req.query;
+
+        let query = `
+            SELECT booking_ref, mess_name, meal_type, meal_date, status
+            FROM bookings
+            WHERE student_id = ?
+        `;
+        const params = [studentId];
+
+        if (date) { query += ' AND meal_date = ?'; params.push(date); }
+        if (mess_name) { query += ' AND mess_name = ?'; params.push(mess_name); }
+
+        query += ' ORDER BY meal_date DESC, meal_type ASC';
+
+        const [bookings] = await pool.query(query, params);
+        res.status(200).json({ success: true, bookings });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // 3. Get Pending Feedback (Strictly for CONSUMED meals)
 // GET /api/student/feedback/pending/:id
 router.get('/feedback/pending/:id', async (req, res) => {
@@ -103,6 +129,47 @@ router.post('/feedback', async (req, res) => {
         if (error.code === 'ER_CHECK_CONSTRAINT_VIOLATED') {
             return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5.' });
         }
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 5. Live Crowd Occupancy (Wait Time Estimator)
+// GET /api/student/occupancy
+router.get('/occupancy', async (req, res) => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Determine current meal type based on time
+        const hour = new Date().getHours();
+        let currentMeal = 'lunch';
+        if (hour >= 6 && hour < 11) currentMeal = 'breakfast';
+        else if (hour >= 11 && hour < 15) currentMeal = 'lunch';
+        else if (hour >= 15 && hour < 18) currentMeal = 'snacks';
+        else currentMeal = 'dinner';
+
+        const [rows] = await pool.query(`
+            SELECT mess_name, status, COUNT(*) as count
+            FROM bookings
+            WHERE meal_date = ? AND meal_type = ?
+            GROUP BY mess_name, status
+        `, [today, currentMeal]);
+
+        // Format data: { Mess_A: { booked: 0, consumed: 0 }, Mess_B: { booked: 0, consumed: 0 } }
+        const occupancy = {
+            Mess_A: { booked: 0, consumed: 0 },
+            Mess_B: { booked: 0, consumed: 0 },
+            currentMeal
+        };
+
+        rows.forEach(row => {
+            if (occupancy[row.mess_name]) {
+                if (row.status === 'consumed') occupancy[row.mess_name].consumed += row.count;
+                if (row.status === 'booked') occupancy[row.mess_name].booked += row.count;
+            }
+        });
+
+        res.status(200).json({ success: true, occupancy });
+    } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });

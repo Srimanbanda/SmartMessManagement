@@ -138,4 +138,63 @@ router.get('/feedback/stats', async (req, res) => {
     }
 });
 
+// 7. Get Global System Analytics (College Admin Dashboard)
+// GET /api/admin/analytics
+router.get('/analytics', async (req, res) => {
+    try {
+        // Query 1: Total Active Students
+        const [[{ total_students }]] = await pool.query(
+            `SELECT COUNT(*) as total_students FROM students WHERE is_active = TRUE`
+        );
+
+        // Query 2: Meals Served Today
+        const [[{ meals_today }]] = await pool.query(
+            `SELECT COUNT(*) as meals_today FROM bookings WHERE meal_date = CURDATE() AND status = 'consumed'`
+        );
+
+        res.status(200).json({
+            success: true,
+            data: {
+                total_students: total_students || 0,
+                meals_today: meals_today || 0
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 8. Get All Students for Registry
+// GET /api/admin/students
+router.get('/students', async (req, res) => {
+    try {
+        const [students] = await pool.query(
+            `SELECT id, name, roll_no, rfid_uid, coins, is_active FROM students ORDER BY id DESC`
+        );
+        res.status(200).json({ success: true, students });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 9. Update Student Policy/Details
+// PUT /api/admin/student/:id
+router.put('/student/:id', async (req, res) => {
+    const studentId = req.params.id;
+    const { name, roll_no, rfid_uid, coins, is_active } = req.body;
+    
+    try {
+        await pool.query(
+            `UPDATE students SET name = ?, roll_no = ?, rfid_uid = ?, coins = ?, is_active = ? WHERE id = ?`,
+            [name, roll_no, rfid_uid, coins, is_active ? 1 : 0, studentId]
+        );
+        res.status(200).json({ success: true, message: 'Student updated successfully.' });
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ success: false, message: 'Roll number or RFID already exists.' });
+        }
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 module.exports = router;
