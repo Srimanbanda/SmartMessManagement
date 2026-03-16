@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Coffee, MessageSquare, Monitor, LayoutList, Activity, Users, CreditCard, LogOut } from 'lucide-react';
+import { LayoutDashboard, Coffee, MessageSquare, Monitor, LayoutList, Activity, Users, CreditCard, LogOut, Star } from 'lucide-react';
 
 const navs = {
   student: [
@@ -11,10 +11,12 @@ const navs = {
   mess_admin: [
     { name: 'Live Monitor', path: '/mess-admin/monitor', icon: Monitor },
     { name: 'Menu Editor', path: '/mess-admin/menu', icon: LayoutList },
+    { name: 'Student Reviews', path: '/mess-admin/reviews', icon: Star },
   ],
   college_admin: [
     { name: 'Global Analytics', path: '/college-admin/analytics', icon: Activity },
     { name: 'Student Registry', path: '/college-admin/registry', icon: Users },
+    { name: 'Student Reviews', path: '/college-admin/reviews', icon: Star },
     { name: 'Wallet Recharge', path: '/college-admin/recharge', icon: CreditCard },
   ]
 };

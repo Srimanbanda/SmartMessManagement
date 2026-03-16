@@ -15,7 +15,6 @@ export default function LiveMonitor() {
         const { data } = await apiClient.get('/api/admin/bookings', {
           params: { date, mess_name: messFilter }
         });
-        // Backend returns { success: true, bookings: [...] }
         setBookings(Array.isArray(data.bookings) ? data.bookings : []);
       } catch (error) {
         console.error(error);
@@ -53,8 +52,8 @@ export default function LiveMonitor() {
   }, {});
 
   return (
-    <div className="max-w-6xl animate-fade-in">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+    <div className="max-w-6xl animate-fade-in space-y-8">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-black text-gray-800 mb-1 flex items-center">
              <Activity className="w-8 h-8 mr-3 text-primary animate-pulse" />
@@ -79,8 +78,8 @@ export default function LiveMonitor() {
       </div>
 
       {/* Aggregation Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {['breakfast', 'lunch', 'dinner'].map(meal => {
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {['breakfast', 'lunch', 'dinner','snacks'].map(meal => {
           const stats = mealStats[meal] || { booked: 0, consumed: 0 };
           return (
             <div key={meal} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between">
@@ -114,7 +113,6 @@ export default function LiveMonitor() {
             {bookings.map((booking) => (
               <tr key={booking.id} className="hover:bg-gray-50/50 transition-colors">
                 <td className="px-6 py-5">
-                   {/* Backend returns 'name' and 'roll_no' from the JOIN */}
                    <div className="font-bold text-gray-800 text-lg">{booking.name}</div>
                    <div className="text-sm font-bold text-gray-500 opacity-80">{booking.roll_no}</div>
                 </td>

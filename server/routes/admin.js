@@ -125,14 +125,21 @@ router.get('/feedback/stats', async (req, res) => {
             SELECT mess_name, ROUND(AVG(rating), 1) as avg_rating, COUNT(*) as total_reviews 
             FROM feedback GROUP BY mess_name
         `);
-        // Get the 5 most recent reviews
+        // Get rating distribution across all messes
+        const [distribution] = await pool.query(`
+            SELECT rating, COUNT(*) as count 
+            FROM feedback 
+            GROUP BY rating 
+            ORDER BY rating DESC
+        `);
+        // Get the 50 most recent reviews
         const [recent] = await pool.query(`
             SELECT f.rating, f.meal_type, f.meal_date, f.mess_name, f.source, s.name 
             FROM feedback f
             JOIN students s ON f.student_id = s.id
-            ORDER BY f.created_at DESC LIMIT 5
+            ORDER BY f.created_at DESC LIMIT 50
         `);
-        res.status(200).json({ success: true, stats, recent });
+        res.status(200).json({ success: true, stats, distribution, recent });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -152,11 +159,21 @@ router.get('/analytics', async (req, res) => {
             `SELECT COUNT(*) as meals_today FROM bookings WHERE meal_date = CURDATE() AND status = 'consumed'`
         );
 
+        // Query 3: Weekly Trend (last 7 days of consumed meals)
+        const [weekly_meals] = await pool.query(`
+            SELECT DATE_FORMAT(meal_date, '%m/%d') as date, COUNT(*) as count 
+            FROM bookings 
+            WHERE status = 'consumed' AND meal_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+            GROUP BY meal_date
+            ORDER BY meal_date ASC
+        `);
+
         res.status(200).json({
             success: true,
             data: {
                 total_students: total_students || 0,
-                meals_today: meals_today || 0
+                meals_today: meals_today || 0,
+                weekly_meals: weekly_meals || []
             }
         });
     } catch (error) {

@@ -19,11 +19,13 @@ import PendingFeedback from './pages/student/PendingFeedback';
 // Mess Admin Pages
 import LiveMonitor from './pages/mess-admin/LiveMonitor';
 import MenuEditor from './pages/mess-admin/MenuEditor';
+import MessAdminReviews from './pages/mess-admin/MessAdminReviews';
 
 // College Admin Pages
 import GlobalAnalytics from './pages/college-admin/GlobalAnalytics';
 import StudentRegistry from './pages/college-admin/StudentRegistry';
 import WalletRecharge from './pages/college-admin/WalletRecharge';
+import CollegeAdminReviews from './pages/college-admin/CollegeAdminReviews';
 
 const App = () => {
   return (
@@ -47,6 +49,7 @@ const App = () => {
               <Route index element={<Navigate to="monitor" replace />} />
               <Route path="monitor" element={<LiveMonitor />} />
               <Route path="menu" element={<MenuEditor />} />
+              <Route path="reviews" element={<MessAdminReviews />} />
             </Route>
 
             {/* College Admin Portal */}
@@ -55,6 +58,7 @@ const App = () => {
               <Route path="analytics" element={<GlobalAnalytics />} />
               <Route path="registry" element={<StudentRegistry />} />
               <Route path="recharge" element={<WalletRecharge />} />
+              <Route path="reviews" element={<CollegeAdminReviews />} />
             </Route>
 
             {/* Absolute Fallback */}
