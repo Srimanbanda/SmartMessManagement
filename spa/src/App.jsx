@@ -3,6 +3,8 @@ import { AuthProvider } from './context/AuthContext';
 import { WalletProvider } from './context/WalletContext';
 
 // Guards & Layouts
+
+
 import ProtectedRoute from './routes/ProtectedRoute';
 import StudentLayout from './layouts/StudentLayout';
 import MessAdminLayout from './layouts/MessAdminLayout';
@@ -10,6 +12,8 @@ import CollegeAdminLayout from './layouts/CollegeAdminLayout';
 
 // Public
 import Login from './pages/public/Login';
+
+
 
 // Student Pages
 import Dashboard from './pages/student/Dashboard';
@@ -22,6 +26,7 @@ import MenuEditor from './pages/mess-admin/MenuEditor';
 import MessAdminReviews from './pages/mess-admin/MessAdminReviews';
 
 // College Admin Pages
+
 import GlobalAnalytics from './pages/college-admin/GlobalAnalytics';
 import StudentRegistry from './pages/college-admin/StudentRegistry';
 import WalletRecharge from './pages/college-admin/WalletRecharge';
@@ -53,6 +58,7 @@ const App = () => {
             </Route>
 
             {/* College Admin Portal */}
+            
             <Route path="/college-admin/*" element={<ProtectedRoute allowedRoles={['College_Admin']}><CollegeAdminLayout /></ProtectedRoute>}>
               <Route index element={<Navigate to="analytics" replace />} />
               <Route path="analytics" element={<GlobalAnalytics />} />

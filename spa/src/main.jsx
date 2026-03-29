@@ -5,6 +5,8 @@ import App from './App.jsx'
 import { ToastProvider } from './components/common/ToastProvider.jsx'
 
 createRoot(document.getElementById('root')).render(
+
+  
   <StrictMode>
     <ToastProvider>
       <App />
