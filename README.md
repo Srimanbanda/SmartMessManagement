@@ -81,7 +81,7 @@ You will need the following installed on your local machine:
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/your-username/smart-mess-management.git
+git clone https://github.com/Srimanbanda/SmartMessManagement
 cd smart-mess-management
 ```
 
